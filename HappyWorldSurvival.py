@@ -5,7 +5,8 @@ import pathlib
 
 import arcade
 
-from assets.buttons import MenuButton
+from assets.gui.buttons import MenuButton
+from assets.gui.text_input import TextInput
 
 
 class GameWindow(arcade.Window):
@@ -22,7 +23,50 @@ class GameWindow(arcade.Window):
 
         self.on_menu = True
 
-    def main_menu(self):
+    def on_draw(self):
+        '''
+        Draws the game to the screen
+        '''
+        arcade.start_render()
+
+        if self.on_menu:
+            for button in self.button_list:
+                if button.active:
+                    button.draw()
+            for dialogue in self.dialogue_box_list:
+                if dialogue.active:
+                    dialogue.on_draw()
+                    arcade.draw_text(
+                        "Server IP:",
+                        self.get_size()[0] / 2 - 30,
+                        self.get_size()[1] / 2 + 100,
+                        arcade.color.WHITE,
+                        20,
+                        anchor_x="right",
+                        anchor_y="center"
+                    )
+                    self.text_input.draw()
+            arcade.draw_text(
+                "Happy World Survival",
+                self.get_size()[0] / 2,
+                500,
+                arcade.color.WHITE,
+                60,
+                anchor_x="center",
+                anchor_y="center"
+            )
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        super().on_mouse_press(x, y, button, modifiers)
+        self.text_input.process_mouse_press(x, y, button, modifiers)
+
+    def on_key_press(self, key, modifiers):
+        self.text_input.process_key_press(key, modifiers)
+
+    def on_key_release(self, key, modifiers):
+        self.text_input.process_key_release(key, modifiers)
+
+    def load_main_menu(self):
         '''
         loads the main menu GUI
         '''
@@ -34,37 +78,97 @@ class GameWindow(arcade.Window):
         clicked = pathlib.Path("static/buttons/Clicked.png")
         locked = pathlib.Path("static/buttons/Locked.png")
 
+        dialogue_box = pathlib.Path("static/dialogue/dialogue_box.png")
+
         self.menu_theme.add_button_textures(normal, hover, clicked, locked)
+        self.menu_theme.add_dialogue_box_texture(dialogue_box)
 
-        self.button_list.append(
-            MenuButton(self, 350, "Load Game", self.load_game)
-        )
-        self.button_list.append(
-            MenuButton(self, 250, "Connect to Game", self.connect_server)
-        )
-        self.button_list.append(
-            MenuButton(self, 150, "Quit", self.quit_game)
+        self.menu_dialoguebox = arcade.gui.DialogueBox(
+            self.get_size()[0] / 2,
+            self.get_size()[1] / 2,
+            300,
+            300,
+            color=arcade.color.WHITE,
+            theme=self.menu_theme
         )
 
-    def on_draw(self):
-        '''
-        Draws the game to the screen
-        '''
-        arcade.start_render()
+        self.text_input = TextInput(
+            self.get_size()[0] / 2,
+            self.get_size()[1] / 2 + 50,
+            250,
+            50,
+            font_size=28
+        )
 
-        if self.on_menu:
-            for button in self.button_list:
-                if button.active:
-                    button.draw()
-            arcade.draw_text(
-                "Happy World Survival",
-                self.get_size()[0] / 2,
-                500,
-                arcade.color.WHITE,
-                60,
-                anchor_x="center",
-                anchor_y="center"
+        self.menu_dialoguebox.button_list.append(
+            MenuButton(
+                self.get_size(),
+                self.get_size()[1] / 2 - 100,
+                "Close",
+                self.hide_menu_dialogue,
+                theme=self.menu_theme
             )
+        )
+
+        self.menu_dialoguebox.button_list.append(
+            MenuButton(
+                self.get_size(),
+                self.get_size()[1] / 2 - 20,
+                "Connect",
+                self.connect_server,
+                theme=self.menu_theme
+            )
+        )
+        self.dialogue_box_list.append(self.menu_dialoguebox)
+
+        self.button_list.append(
+            MenuButton(
+                self.get_size(),
+                350,
+                "Load Game",
+                self.load_game,
+                theme=self.menu_theme
+            )
+        )
+
+        self.button_list.append(
+            MenuButton(
+                self.get_size(),
+                250,
+                "Connect to Game",
+                self.show_manu_dialogue,
+                theme=self.menu_theme
+            )
+        )
+
+        self.button_list.append(
+            MenuButton(
+                self.get_size(),
+                150, "Quit",
+                self.quit_game,
+                theme=self.menu_theme
+            )
+        )
+
+    def show_manu_dialogue(self):
+        '''
+        Shows the dialogue box
+        '''
+
+        for button in self.button_list:
+            button.locked = True
+
+        self.menu_dialoguebox.active = True
+
+    def hide_menu_dialogue(self):
+        '''
+        Hides the menu dialogue
+        '''
+
+        for button in self.button_list:
+            button.locked = False
+
+        self.menu_dialoguebox.active = False
 
     def load_game(self):
         '''
@@ -74,9 +178,9 @@ class GameWindow(arcade.Window):
 
     def connect_server(self):
         '''
-        Gets an ip from user and attempts to connect
+       Attempts to connect to server
         '''
-        print("Connect Server")
+        print("Connect Server", self.text_input.text)
 
     def quit_game(self):
         '''
@@ -91,6 +195,6 @@ if __name__ == "__main__":
     game.set_caption("Happy World Survival")
     game.set_size(800, 600)
 
-    game.main_menu()
+    game.load_main_menu()
 
     arcade.run()
