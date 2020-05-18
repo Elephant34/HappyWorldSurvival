@@ -126,3 +126,6 @@ dmypy.json
 
 # For the editor
 .vscode
+
+# Save file
+worldSave.json

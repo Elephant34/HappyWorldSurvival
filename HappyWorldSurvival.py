@@ -7,6 +7,7 @@ import arcade
 
 from assets.gui.buttons import MenuButton
 from assets.gui.text_input import TextInput
+from assets.util.world import World
 
 
 class GameWindow(arcade.Window):
@@ -115,7 +116,7 @@ class GameWindow(arcade.Window):
                 self.get_size(),
                 self.get_size()[1] / 2 - 20,
                 "Connect",
-                self.connect_server,
+                self.try_user_connection,
                 theme=self.menu_theme
             )
         )
@@ -174,13 +175,21 @@ class GameWindow(arcade.Window):
         '''
         Loads the game by starting a server and then connecting
         '''
+
+        self.game_world = World()
         print("Load Game")
 
-    def connect_server(self):
+    def try_user_connection(self):
         '''
-       Attempts to connect to server
+        Gets the ip out of the input then attampts connection
         '''
-        print("Connect Server", self.text_input.text)
+        self.connect_server(self.text_input.text)
+
+    def connect_server(self, ip):
+        '''
+        Attempts to connect to server
+        '''
+        print("Connect Server", ip)
 
     def quit_game(self):
         '''
