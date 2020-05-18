@@ -128,4 +128,5 @@ dmypy.json
 .vscode
 
 # Save file
+worldSave?.json
 worldSave.json
