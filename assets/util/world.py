@@ -5,6 +5,8 @@ from datetime import datetime
 import pathlib
 import json
 
+from arcade import Sprite
+
 
 class World:
     '''
@@ -29,7 +31,7 @@ class World:
         with open(pathlib.Path("static/settings.json"), "r") as settings:
             self.version = json.load(settings)["version"]
 
-        self.tilemap = self.load_tilemap()
+        self.tilemap = self.create_tilemap()
         self.players = {}
         self.mobs = {}
 
@@ -49,25 +51,16 @@ class World:
             self.players = self.raw_data["players"]
             self.mobs = self.raw_data["mobs"]
 
-            print(self.raw_data)
+            self.save()
 
-    def load_tilemap(self):
+    def create_tilemap(self):
         '''
         Loads a new tilemap
         For now always loads the same thing
         '''
 
         tilemap = [
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            [1 for i in range(15)] for i in range(10)
         ]
 
         return tilemap
@@ -87,3 +80,21 @@ class World:
 
         with open(pathlib.Path("static/worldSave.json"), "w") as save:
             json.dump(self.raw_data, save, indent=4)
+
+    def load_tilemap(self, sprite_list):
+        '''
+        Loads all the tilemap sprites to the list
+        '''
+
+        # This is incase I change how tilemaps load
+        if self.version == "dev":
+            for row_index, row in enumerate(self.tilemap):
+                for column_index, column in enumerate(row):
+                    if column == 1:
+                        img = "static/world/tiles/grass.png"
+                    sprite = Sprite(
+                            img,
+                            center_x=32+(64 * (column_index)),
+                            center_y=32+(64 * (row_index))
+                            )
+                    sprite_list.append(sprite)

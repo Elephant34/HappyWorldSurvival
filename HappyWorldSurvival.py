@@ -56,6 +56,9 @@ class GameWindow(arcade.Window):
                 anchor_x="center",
                 anchor_y="center"
             )
+            return
+
+        self.tile_list.draw()
 
     def on_mouse_press(self, x, y, button, modifiers):
         super().on_mouse_press(x, y, button, modifiers)
@@ -176,8 +179,15 @@ class GameWindow(arcade.Window):
         Loads the game by starting a server and then connecting
         '''
 
+        self.on_menu = False
+
         self.game_world = World()
-        print("Load Game")
+
+        self.tile_list = arcade.SpriteList(
+            is_static=True,
+            use_spatial_hash=True
+        )
+        self.game_world.load_tilemap(self.tile_list)
 
     def try_user_connection(self):
         '''
