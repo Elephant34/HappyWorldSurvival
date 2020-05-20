@@ -1,3 +1,4 @@
 {
-    "version": "dev"
+    "version": "dev",
+    "game_port": 8700
 }

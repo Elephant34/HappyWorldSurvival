@@ -1,9 +1,9 @@
 '''
 Extracts the save data and stores all the world varables
 '''
-from datetime import datetime
-import pathlib
 import json
+import pathlib
+from datetime import datetime
 
 from arcade import Sprite
 
@@ -98,3 +98,8 @@ class World:
                             center_y=32+(64 * (row_index))
                             )
                     sprite_list.append(sprite)
+
+    def update_data(self, changed):
+        '''
+        Updates the world data based off server input
+        '''

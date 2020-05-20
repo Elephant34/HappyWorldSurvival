@@ -2,11 +2,15 @@
 Starts the game opening to the main menu
 '''
 import pathlib
+import socket
+import threading
+import json
 
 import arcade
 
 from assets.gui.buttons import MenuButton
 from assets.gui.text_input import TextInput
+from assets.network.server import run_server
 from assets.util.world import World
 
 
@@ -183,29 +187,73 @@ class GameWindow(arcade.Window):
 
         self.game_world = World()
 
+        threading.Thread(target=run_server).start()
+
         self.tile_list = arcade.SpriteList(
             is_static=True,
             use_spatial_hash=True
         )
         self.game_world.load_tilemap(self.tile_list)
 
+        threading.Thread(
+            target=self.connect_server,
+            args=(socket.gethostbyname(socket.gethostname()), )
+        ).start()
+
     def try_user_connection(self):
         '''
         Gets the ip out of the input then attampts connection
         '''
-        self.connect_server(self.text_input.text)
+        threading.Thread(
+            target=self.connect_server,
+            args=(self.text_input.text, )
+        ).start()
 
     def connect_server(self, ip):
         '''
         Attempts to connect to server
         '''
-        print("Connect Server", ip)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+
+            s.connect((ip, PORT))
+
+            self.send_data(s, self.game_world.raw_data)
+
+            while True:
+                self.server_data = self.recieve_data(s)
+                self.game_world.update_data(self.server_data)
+
+    def send_data(self, conn, data):
+        '''
+        Sends the message to the server
+        '''
+
+        send_data = str(data).encode("utf-8")
+        send_data = format(len(send_data), "08d").encode("utf-8") + send_data
+
+        conn.sendall(send_data)
+
+    def recieve_data(self, s):
+        '''
+        Recieves a message from the server
+        '''
+        header = s.recv(8).decode("utf-8")
+        game_data = s.recv(int(header)).decode("utf-8")
+
+        json_acceptable_string = game_data.replace("'", "\"")
+        game_data = json.loads(json_acceptable_string)
+
+        return game_data
 
     def quit_game(self):
         '''
         Exits the game
         '''
         self.close()
+
+
+with open(pathlib.Path("static/settings.json"), "r") as settings:
+    PORT = json.load(settings)["game_port"]
 
 
 if __name__ == "__main__":
