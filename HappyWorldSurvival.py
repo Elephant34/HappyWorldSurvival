@@ -9,7 +9,7 @@ import arcade
 from assets.gui.buttons import MenuButton
 from assets.gui.text_input import TextInput
 from assets.network.server import RunServer
-from assets.world import World
+from assets.world.world import World
 
 
 class GameWindow(arcade.Window):
@@ -191,7 +191,7 @@ class GameWindow(arcade.Window):
 
         self.hostname = socket.gethostbyname(socket.gethostname())
 
-        self.server = RunServer(self.hostname)
+        RunServer(self.hostname)
 
         self.connect_server(
             self.hostname,

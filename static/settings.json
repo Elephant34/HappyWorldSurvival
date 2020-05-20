@@ -1,4 +1,5 @@
 {
     "version": "dev",
-    "game_port": 8700
+    "game_port": 8700,
+    "save_file": "static/worldSave.json"
 }

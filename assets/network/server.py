@@ -6,6 +6,8 @@ import pathlib
 import socket
 import threading
 
+from assets.world.new_world import create_world
+
 
 class ConnectedGame(threading.Thread):
     '''
@@ -27,7 +29,7 @@ class ConnectedGame(threading.Thread):
         '''
         Runs the main clinet loop
         '''
-        print("connected")
+        print("connection from", self.addr)
 
 
 class RunServer(threading.Thread):
@@ -40,8 +42,17 @@ class RunServer(threading.Thread):
         starts game server thread
         '''
         self.host = host
+
         with pathlib.Path("static/settings.json").open() as settings:
-            self.port = json.load(settings)["game_port"]
+            json_data = json.load(settings)
+            self.port = json_data["game_port"]
+            self.save_file = json_data["save_file"]
+
+        try:
+            with pathlib.Path(self.save_file).open() as save:
+                self.raw_save = json.load(save)
+        except FileNotFoundError:
+            create_world(self.save_file)
 
         super().__init__()
         self.start()
@@ -51,10 +62,10 @@ class RunServer(threading.Thread):
             s.bind((self.host, self.port))
             s.listen(5)
 
+            print("Server started")
+
             while True:
                 conn, addr = s.accept()
-
-                print("server listening")
 
                 # Creates a new client
                 ConnectedGame(conn, addr)
