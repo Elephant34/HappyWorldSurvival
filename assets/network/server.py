@@ -33,6 +33,10 @@ class ConnectedGame(threading.Thread):
 
         self.send_data(self.server.raw_save)
 
+        while True:
+            data = self.recieve_data()
+            print(data)
+
     def recieve_data(self):
         '''
         Recieves a data from the client
