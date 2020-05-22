@@ -8,6 +8,8 @@ import pathlib
 
 import arcade
 
+from assets.enitites.player import Player
+
 
 class World(threading.Thread):
     '''
@@ -45,8 +47,8 @@ class World(threading.Thread):
                     self.recieve_data().replace("'", "\"")
                 )
             self.update_varables(changed_data)
-            self.load_tilemap()
-            self.load_self_player()
+            self.load_world()
+            self.load_player()
             self.loaded = True
 
             while True:
@@ -88,12 +90,16 @@ class World(threading.Thread):
         self.players = self.world_data["players"]
         self.mobs = self.world_data["mobs"]
 
-    def load_tilemap(self):
+    def load_world(self):
         '''
         Loads all the tiles to varables
         '''
 
         self.tilemap_list = arcade.SpriteList(
+            use_spatial_hash=True,
+            is_static=True
+        )
+        self.collision_list = arcade.SpriteList(
             use_spatial_hash=True,
             is_static=True
         )
@@ -103,7 +109,7 @@ class World(threading.Thread):
             for row_index, row in enumerate(self.tilemap):
                 for column_index, column in enumerate(row):
                     if column == 1:
-                        img = "static/world/tiles/grass.png"
+                        img = pathlib.Path("static/world/tiles/grass.png")
 
                     # Adds the tile
                     tile = arcade.Sprite(
@@ -113,10 +119,34 @@ class World(threading.Thread):
                             )
                     self.tilemap_list.append(tile)
 
-    def load_self_player(self):
+    def load_player(self):
         '''
         Loads the user controled player
         '''
+
+        local_settings_path = pathlib.Path("static/localSettings.json")
+
+        if not local_settings_path.exists():
+            with local_settings_path.open("w") as ls:
+                ls.write("{}")
+
+        with local_settings_path.open() as ls:
+            try:
+                connected_id = json.load(ls)["servers"][str(self.host)]
+            except KeyError:
+                connected_id = None
+
+        # If the player already exists on server
+        if connected_id:
+            self.player_data = self.players[connected_id]
+        else:
+            self.player_data = None
+
+        if self.player_data:
+            self.player = Player(self.player_data, True)
+        else:
+            # Generate new player data
+            pass
 
     def on_update(self, dt):
         '''
@@ -136,3 +166,4 @@ class World(threading.Thread):
             return
 
         self.tilemap_list.draw()
+        self.player.draw()
