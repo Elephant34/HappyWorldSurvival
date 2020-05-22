@@ -191,11 +191,11 @@ class GameWindow(arcade.Window):
 
         self.hostname = socket.gethostbyname(socket.gethostname())
 
-        RunServer(self.hostname)
+        self.server = RunServer(self.hostname)
 
         self.connect_server(
             self.hostname,
-            origin=True
+            origin=self.server
         )
 
     def try_user_connection(self):
@@ -205,7 +205,7 @@ class GameWindow(arcade.Window):
 
         self.connect_server(self.text_input.text)
 
-    def connect_server(self, ip, origin=False):
+    def connect_server(self, ip, origin=None):
         '''
         Attempts to connect to server
         '''
@@ -219,6 +219,15 @@ class GameWindow(arcade.Window):
         Exits the game
         '''
         self.close()
+
+    def close(self):
+        '''
+        Overwirtes the default close behaviour to kill the client and server
+        Work in progress
+        '''
+        print("close")
+
+        super().close()
 
 
 if __name__ == "__main__":

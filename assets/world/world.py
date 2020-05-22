@@ -34,7 +34,7 @@ class World(threading.Thread):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as self.conn:
             self.conn.connect((self.host, self.port))
 
-            print("World connected")
+            self.send_changed()
 
             while True:
                 self.world_data = self.recieve_data()
@@ -47,7 +47,7 @@ class World(threading.Thread):
         '''
 
         changed_data = "To work out"
-        data = format(len(changed_data), "08d").encode("utf-8") + changed_data
+        data = (format(len(changed_data), "08d")+changed_data).encode("utf-8")
 
         self.conn.sendall(data)
 
@@ -56,6 +56,7 @@ class World(threading.Thread):
         Recieves the changed world from the server
         '''
         header = self.conn.recv(8).decode("utf-8")
+        print(header)
         raw_data = self.conn.recv(int(header)).decode("utf-8")
 
         return raw_data
@@ -64,6 +65,8 @@ class World(threading.Thread):
         '''
         Updates the player and if origin also the server
         '''
+        if self.origin:
+            self.origin.on_update(dt)
 
     def on_draw(self):
         '''
