@@ -23,6 +23,8 @@ class ConnectedGame(threading.Thread):
         self.conn = conn
         self.addr = addr
 
+        self.live = True
+
         super().__init__()
         self.start()
 
@@ -33,9 +35,14 @@ class ConnectedGame(threading.Thread):
 
         self.send_data(self.server.raw_save)
 
-        while True:
+        while self.live:
             data = self.recieve_data()
-            print(data)
+
+            if data.lower() == "exit":
+                self.disconnect()
+            elif data.lower() == "shutdown":
+                self.disconnect()
+                self.server.shutdown()
 
     def recieve_data(self):
         '''
@@ -57,6 +64,14 @@ class ConnectedGame(threading.Thread):
         send_data = format(len(changed_data), "08d") + changed_data
         self.conn.sendall(send_data.encode("utf-8"))
 
+    def disconnect(self):
+        '''
+        Disconnect the clients from the server
+        '''
+
+        self.live = False
+        self.send_data("KILL")
+
 
 class RunServer(threading.Thread):
     '''
@@ -68,6 +83,7 @@ class RunServer(threading.Thread):
         starts game server thread
         '''
         self.host = host
+        self.live = True
 
         with pathlib.Path("static/settings.json").open() as settings:
             json_data = json.load(settings)
@@ -86,17 +102,28 @@ class RunServer(threading.Thread):
         self.start()
 
     def run(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind((self.host, self.port))
-            s.listen(5)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as self.s:
+            self.s.bind((self.host, self.port))
+            self.s.listen(5)
 
-            while True:
-                conn, addr = s.accept()
+            while self.live:
+                try:
+                    conn, addr = self.s.accept()
 
-                # Creates a new client
-                ConnectedGame(self, conn, addr)
+                    # Creates a new client
+                    ConnectedGame(self, conn, addr)
+                except OSError:
+                    pass
 
     def on_update(self, dt):
         '''
         Updates the mobs and anything not player controled
         '''
+
+    def shutdown(self):
+        '''
+        Shuts down the server when host closes
+        '''
+
+        self.live = False
+        self.s.close()

@@ -30,6 +30,7 @@ class World(threading.Thread):
         self.world_data = {}
 
         self.loaded = False
+        self.connected = False
 
         super().__init__()
         self.start()
@@ -42,6 +43,8 @@ class World(threading.Thread):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as self.conn:
             self.conn.connect((self.host, self.port))
 
+            self.connected = True
+
             # Gets the first load of data, sets tilemap and loads varables
             changed_data = json.loads(
                     self.recieve_data().replace("'", "\"")
@@ -51,12 +54,15 @@ class World(threading.Thread):
             self.load_player()
             self.loaded = True
 
-            while True:
-                changed_data = json.loads(
-                    self.recieve_data().replace("'", "\"")
-                )
+            while self.connected:
+                try:
+                    changed_data = json.loads(
+                        self.recieve_data().replace("'", "\"")
+                    )
 
-                self.update_varables(changed_data)
+                    self.update_varables(changed_data)
+                except json.decoder.JSONDecodeError:
+                    pass
 
     def send_changed(self, to_server):
         '''
@@ -167,3 +173,15 @@ class World(threading.Thread):
 
         self.tilemap_list.draw()
         self.player.draw()
+
+    def shutdown(self):
+        '''
+        Closes the connection to the server
+        '''
+
+        self.connected = False
+
+        if self.origin:
+            self.send_changed("SHUTDOWN")
+        else:
+            self.send_changed("EXIT")

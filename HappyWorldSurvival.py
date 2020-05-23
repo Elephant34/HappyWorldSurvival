@@ -225,7 +225,7 @@ class GameWindow(arcade.Window):
         Overwirtes the default close behaviour to kill the client and server
         Work in progress
         '''
-        print("close")
+        self.game_world.shutdown()
 
         super().close()
 
