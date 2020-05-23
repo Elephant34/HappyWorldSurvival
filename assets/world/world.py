@@ -56,6 +56,11 @@ class World(threading.Thread):
             self.update_varables()
             self.load_world()
             self.load_player()
+
+            self.physics_engine = arcade.PhysicsEngineSimple(
+                self.player,
+                self.collision_list
+            )
             self.loaded = True
 
             while self.connected:
@@ -173,9 +178,13 @@ class World(threading.Thread):
             }
 
             self.players[connected_id] = self.player_data
-            self.send_changed(str(self.players))
+
+        self.connected_id = connected_id
 
         self.player = Player(self.player_data, True)
+
+        self.players[self.connected_id]["connected"] = True
+        self.send_changed(str(self.players))
 
     def on_update(self, dt):
         '''
@@ -187,6 +196,8 @@ class World(threading.Thread):
         if self.origin:
             self.origin.on_update(dt)
 
+        self.physics_engine.update()
+
     def on_draw(self):
         '''
         Draws all the tiles and other sprites
@@ -197,11 +208,41 @@ class World(threading.Thread):
         self.tilemap_list.draw()
         self.player.draw()
 
+    def on_key_press(self, key, modifiers):
+        """
+        Called whenever a key is pressed.
+        """
+
+        if key in self.player.keys["up"]:
+            self.player.change_y += self.player.speed
+        elif key in self.player.keys["down"]:
+            self.player.change_y += -self.player.speed
+        elif key in self.player.keys["left"]:
+            self.player.change_x += -self.player.speed
+        elif key in self.player.keys["right"]:
+            self.player.change_x += self.player.speed
+
+    def on_key_release(self, key, modifiers):
+        """
+        Called when the user releases a key.
+        """
+
+        if key in self.player.keys["up"]:
+            self.player.change_y += -self.player.speed
+        elif key in self.player.keys["down"]:
+            self.player.change_y += self.player.speed
+        elif key in self.player.keys["left"]:
+            self.player.change_x += self.player.speed
+        elif key in self.player.keys["right"]:
+            self.player.change_x += -self.player.speed
+
     def shutdown(self):
         '''
         Closes the connection to the server
         '''
 
+        self.players[self.connected_id]["connected"] = True
+        self.send_changed(str(self.players))
         self.connected = False
 
         if self.origin:

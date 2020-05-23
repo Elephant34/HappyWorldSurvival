@@ -29,3 +29,23 @@ class Player(arcade.Sprite):
             center_x=self.data["pos"][0],
             center_y=self.data["pos"][1]
         )
+
+        self.keys = {
+            "up": [
+                arcade.key.W,
+                arcade.key.UP
+            ],
+            "down": [
+                arcade.key.S,
+                arcade.key.DOWN
+            ],
+            "left": [
+                arcade.key.A,
+                arcade.key.LEFT
+            ],
+            "right": [
+                arcade.key.D,
+                arcade.key.RIGHT
+            ]
+        }
+        self.speed = 5

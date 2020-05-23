@@ -76,9 +76,13 @@ class GameWindow(arcade.Window):
 
     def on_key_press(self, key, modifiers):
         self.text_input.process_key_press(key, modifiers)
+        if not self.on_menu:
+            self.game_world.on_key_press(key, modifiers)
 
     def on_key_release(self, key, modifiers):
         self.text_input.process_key_release(key, modifiers)
+        if not self.on_menu:
+            self.game_world.on_key_release(key, modifiers)
 
     def load_main_menu(self):
         '''
