@@ -44,7 +44,7 @@ class ConnectedGame(threading.Thread):
                 self.disconnect()
                 self.server.shutdown()
             else:
-                print(data)
+                self.server.send_all(data)
 
     def recieve_data(self):
         '''
@@ -72,6 +72,7 @@ class ConnectedGame(threading.Thread):
         '''
 
         self.live = False
+        self.server.remove_player(self)
         self.send_data("KILL")
 
 
@@ -100,6 +101,8 @@ class RunServer(threading.Thread):
             with pathlib.Path(self.save_path).open() as save:
                 self.raw_save = json.load(save)
 
+        self.client_list = []
+
         super().__init__()
         self.start()
 
@@ -113,14 +116,28 @@ class RunServer(threading.Thread):
                     conn, addr = self.s.accept()
 
                     # Creates a new client
-                    ConnectedGame(self, conn, addr)
+                    game = ConnectedGame(self, conn, addr)
+                    self.client_list.append(game)
                 except OSError:
                     pass
+
+    def send_all(self, data):
+        '''
+        Sends data to all clients
+        '''
+        for game in self.client_list:
+            game.send_data(data)
 
     def on_update(self, dt):
         '''
         Updates the mobs and anything not player controled
         '''
+
+    def remove_player(self, game):
+        '''
+        Removes a game from the connected list
+        '''
+        self.client_list.remove(game)
 
     def shutdown(self):
         '''

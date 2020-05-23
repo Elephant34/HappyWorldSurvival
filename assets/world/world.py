@@ -50,18 +50,22 @@ class World(threading.Thread):
             changed_data = json.loads(
                     self.recieve_data().replace("'", "\"")
                 )
-            self.update_varables(changed_data)
+
+            for key in changed_data.keys():
+                self.world_data[key] = changed_data[key]
+            self.update_varables()
             self.load_world()
             self.load_player()
             self.loaded = True
 
             while self.connected:
                 try:
+                    got_data = self.recieve_data().replace("'", "\"")
                     changed_data = json.loads(
-                        self.recieve_data().replace("'", "\"")
+                        got_data
                     )
 
-                    self.update_varables(changed_data)
+                    self.update_varables()
                 except json.decoder.JSONDecodeError:
                     pass
 
@@ -70,6 +74,7 @@ class World(threading.Thread):
         Sends the changed world state to the server
         '''
 
+        to_server = str(to_server)
         data = (format(len(to_server), "08d") + to_server).encode("utf-8")
 
         self.conn.sendall(data)
@@ -83,19 +88,22 @@ class World(threading.Thread):
 
         return raw_data
 
-    def update_varables(self, data):
+    def update_varables(self):
         '''
         Updates all self varables to be usful for the game
         '''
-
-        for key in data.keys():
-            self.world_data[key] = data[key]
 
         self.version = self.world_data["version"]
         self.last_save = self.world_data["last_save"]
         self.tilemap = self.world_data["tilemap"]
         self.players = self.world_data["players"]
         self.mobs = self.world_data["mobs"]
+
+        with pathlib.Path("static/settings.json").open() as settings:
+            save_path = json.load(settings)["save_path"]
+
+        with pathlib.Path(save_path).open("w") as save:
+            json.dump(self.world_data, save, indent=4)
 
     def load_world(self):
         '''
@@ -149,7 +157,7 @@ class World(threading.Thread):
             self.player_data = self.players[connected_id]
         else:
             while True:
-                connected_id = random.randint(0, 10000)
+                connected_id = str(random.randint(0, 10000))
                 try:
                     self.players[connected_id]
                 except KeyError:
@@ -160,13 +168,12 @@ class World(threading.Thread):
                 json.dump(local_data, ls)
 
             self.player_data = {
-                connected_id: {
-                    "pos": [300, 300],
-                    "connected": False
-                }
+                "pos": [300, 300],
+                "connected": "False"
             }
 
-            # this needs to then be sent to the server and added to world save
+            self.players[connected_id] = self.player_data
+            self.send_changed(str(self.players))
 
         self.player = Player(self.player_data, True)
 
