@@ -5,6 +5,7 @@ import socket
 import threading
 import json
 import pathlib
+import random
 
 import arcade
 
@@ -134,11 +135,12 @@ class World(threading.Thread):
 
         if not local_settings_path.exists():
             with local_settings_path.open("w") as ls:
-                ls.write("{}")
+                ls.write('{"server": {}}')
 
         with local_settings_path.open() as ls:
+            local_data = json.load(ls)
             try:
-                connected_id = json.load(ls)["servers"][str(self.host)]
+                connected_id = local_data["servers"][str(self.host)]
             except KeyError:
                 connected_id = None
 
@@ -146,13 +148,27 @@ class World(threading.Thread):
         if connected_id:
             self.player_data = self.players[connected_id]
         else:
-            self.player_data = None
+            while True:
+                connected_id = random.randint(0, 10000)
+                try:
+                    self.players[connected_id]
+                except KeyError:
+                    break
 
-        if self.player_data:
-            self.player = Player(self.player_data, True)
-        else:
-            # Generate new player data
-            pass
+            local_data["server"][str(self.host)] = connected_id
+            with local_settings_path.open("w") as ls:
+                json.dump(local_data, ls)
+
+            self.player_data = {
+                connected_id: {
+                    "pos": [300, 300],
+                    "connected": False
+                }
+            }
+
+            # this needs to then be sent to the server and added to world save
+
+        self.player = Player(self.player_data, True)
 
     def on_update(self, dt):
         '''

@@ -43,6 +43,8 @@ class ConnectedGame(threading.Thread):
             elif data.lower() == "shutdown":
                 self.disconnect()
                 self.server.shutdown()
+            else:
+                print(data)
 
     def recieve_data(self):
         '''
