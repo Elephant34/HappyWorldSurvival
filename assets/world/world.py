@@ -56,6 +56,7 @@ class World(threading.Thread):
             self.update_varables()
             self.load_world()
             self.load_player()
+            self.load_enities()
 
             self.physics_engine = arcade.PhysicsEngineSimple(
                 self.player,
@@ -92,6 +93,14 @@ class World(threading.Thread):
         raw_data = self.conn.recv(int(header)).decode("utf-8")
 
         return raw_data
+
+    def send_player_update(self):
+        '''
+        Sends updated players data to the server
+        '''
+
+        send_data = {"players": self.players}
+        self.send_changed(str(send_data))
 
     def update_varables(self):
         '''
@@ -153,7 +162,7 @@ class World(threading.Thread):
         with local_settings_path.open() as ls:
             local_data = json.load(ls)
             try:
-                connected_id = local_data["servers"][str(self.host)]
+                connected_id = local_data["server"][str(self.host)]
             except KeyError:
                 connected_id = None
 
@@ -181,10 +190,32 @@ class World(threading.Thread):
 
         self.connected_id = connected_id
 
-        self.player = Player(self.player_data, True)
+        self.player = Player(self.player_data)
 
-        self.players[self.connected_id]["connected"] = True
-        self.send_changed(str(self.players))
+        self.players[self.connected_id]["connected"] = "True"
+        self.send_player_update()
+
+    def load_enities(self):
+        '''
+        Loads the NPC's and other players
+        '''
+        self.moving_sprite_list = arcade.SpriteList()
+
+        # Loads the active players
+        image_selection = pathlib.Path(
+            "static/enities/players/"
+        ).glob("*.png")
+        for player in self.players.keys():
+            if player != self.connected_id:
+                if self.players[player]["connected"].lower() == "true":
+                    image = random.choice(list(image_selection))
+                    sprite = arcade.Sprite(
+                        image,
+                        0.5,
+                        center_x=self.players[player]["pos"][0],
+                        center_y=self.players[player]["pos"][1]
+                    )
+                    self.moving_sprite_list.append(sprite)
 
     def on_update(self, dt):
         '''
@@ -196,7 +227,10 @@ class World(threading.Thread):
         if self.origin:
             self.origin.on_update(dt)
 
-        self.physics_engine.update()
+        self.collisions = self.physics_engine.update()
+
+        self.player_data["pos"] = list(self.player.position)
+        self.send_player_update()
 
     def on_draw(self):
         '''
@@ -206,6 +240,7 @@ class World(threading.Thread):
             return
 
         self.tilemap_list.draw()
+        self.moving_sprite_list.draw()
         self.player.draw()
 
     def on_key_press(self, key, modifiers):
@@ -241,8 +276,8 @@ class World(threading.Thread):
         Closes the connection to the server
         '''
 
-        self.players[self.connected_id]["connected"] = True
-        self.send_changed(str(self.players))
+        self.players[self.connected_id]["connected"] = "False"
+        self.send_player_update()
         self.connected = False
 
         if self.origin:

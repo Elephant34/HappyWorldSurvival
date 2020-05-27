@@ -12,12 +12,11 @@ class Player(arcade.Sprite):
     Creates a player on the game
     '''
 
-    def __init__(self, data, user_controled: bool = False):
+    def __init__(self, data):
         '''
         Sets up the player varables
         '''
 
-        self.user_controled = user_controled
         self.data = data
 
         image_selection = pathlib.Path("static/enities/players/").glob("*.png")
