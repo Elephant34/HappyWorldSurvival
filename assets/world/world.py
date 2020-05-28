@@ -1,11 +1,12 @@
 '''
 Connects to the server and loads the local game world
 '''
-import socket
-import threading
 import json
+import logging
 import pathlib
 import random
+import socket
+import threading
 
 import arcade
 
@@ -22,6 +23,8 @@ class World(threading.Thread):
         Loads the thread
         '''
 
+        logging.info("World thread loading")
+
         self.host = host
         self.origin = origin
 
@@ -32,6 +35,9 @@ class World(threading.Thread):
 
         self.loaded = False
         self.connected = False
+
+        self.player = None
+        self.enities_loaded = False
 
         super().__init__()
         self.start()
@@ -46,6 +52,8 @@ class World(threading.Thread):
 
             self.connected = True
 
+            logging.info("Connected to server")
+
             # Gets the first load of data, sets tilemap and loads varables
             changed_data = json.loads(
                     self.recieve_data().replace("'", "\"")
@@ -57,6 +65,8 @@ class World(threading.Thread):
             self.load_world()
             self.load_player()
             self.load_enities()
+
+            logging.info("Loaded world")
 
             self.physics_engine = arcade.PhysicsEngineSimple(
                 self.player,
@@ -217,6 +227,28 @@ class World(threading.Thread):
                     )
                     self.moving_sprite_list.append(sprite)
 
+    def update_enities(self):
+        '''
+        Ensures that any changes are applied to te game window
+        '''
+        # Loads the active players
+        image_selection = pathlib.Path(
+            "static/enities/players/"
+        ).glob("*.png")
+        for player in self.players.keys():
+            if player != self.connected_id:
+                if self.players[player]["connected"].lower() == "true":
+                    image = random.choice(list(image_selection))
+                    sprite = arcade.Sprite(
+                        image,
+                        0.5,
+                        center_x=self.players[player]["pos"][0],
+                        center_y=self.players[player]["pos"][1]
+                    )
+                    self.moving_sprite_list.append(sprite)
+
+        self.enities_loaded = True
+
     def on_update(self, dt):
         '''
         Updates the player and if origin also the server
@@ -229,8 +261,12 @@ class World(threading.Thread):
 
         self.collisions = self.physics_engine.update()
 
-        self.player_data["pos"] = list(self.player.position)
-        self.send_player_update()
+        if self.enities_loaded:
+            self.update_enities()
+
+        if self.player:
+            self.player_data["pos"] = list(self.player.position)
+            self.send_player_update()
 
     def on_draw(self):
         '''

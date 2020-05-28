@@ -55,8 +55,11 @@ class ConnectedGame(threading.Thread):
         Recieves a data from the client
         '''
 
-        header = self.conn.recv(8).decode("utf-8")
-        changed_data = self.conn.recv(int(header)).decode("utf-8")
+        try:
+            header = self.conn.recv(8).decode("utf-8")
+            changed_data = self.conn.recv(int(header)).decode("utf-8")
+        except ConnectionAbortedError:
+            changed_data = ""
 
         return changed_data
 
@@ -186,4 +189,6 @@ class RunServer(threading.Thread):
             self.raw_save["players"][player]["connected"] = "False"
         self.save()
 
+        for client in self.client_list:
+            client.disconnect()
         self.s.close()

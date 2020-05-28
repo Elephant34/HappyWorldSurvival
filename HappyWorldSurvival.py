@@ -1,8 +1,11 @@
 '''
 Starts the game opening to the main menu
 '''
+import logging
 import pathlib
 import socket
+
+from datetime import datetime
 
 import arcade
 
@@ -25,6 +28,8 @@ class GameWindow(arcade.Window):
         super().__init__()
 
         self.on_menu = True
+
+        logging.info("Game window loaded")
 
     def on_draw(self):
         '''
@@ -168,6 +173,8 @@ class GameWindow(arcade.Window):
             )
         )
 
+        logging.info("Main menu varables loaded")
+
     def show_manu_dialogue(self):
         '''
         Shows the dialogue box
@@ -213,6 +220,7 @@ class GameWindow(arcade.Window):
         '''
         Attempts to connect to server
         '''
+        logging.info("Attempting world load")
 
         self.game_world = World(ip, origin)
 
@@ -227,8 +235,8 @@ class GameWindow(arcade.Window):
     def close(self):
         '''
         Overwirtes the default close behaviour to kill the client and server
-        Work in progress
         '''
+        logging.info("Closing game")
         try:
             self.game_world.shutdown()
         except AttributeError:
@@ -239,10 +247,22 @@ class GameWindow(arcade.Window):
 
 if __name__ == "__main__":
 
+    if not pathlib.Path("static/logs/").exists():
+        pathlib.Path("static/logs/").mkdir()
+    logging.basicConfig(
+        filename="static/logs/{}.log".format(
+            str(datetime.now())[:-7].replace(":", ".")
+        ),
+        level=logging.INFO
+    )
+
+    logging.info("Game Started")
+
     game = GameWindow()
     game.set_caption("Happy World Survival")
     game.set_size(800, 600)
 
     game.load_main_menu()
 
+    logging.info("Game loop running")
     arcade.run()
